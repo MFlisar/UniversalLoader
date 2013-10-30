@@ -11,8 +11,8 @@ import android.widget.TextView;
 
 import com.astuetz.viewpager.extensions.PagerSlidingTabStrip;
 import com.michaelflisar.pagermanager.IPagerFragment;
-import com.michaelflisar.pagermanager.ULFragmentPagerStateAdapter;
-import com.michaelflisar.pagermanager.ULPagerManager;
+import com.michaelflisar.pagermanager.MFragmentPagerStateAdapter;
+import com.michaelflisar.pagermanager.MPagerManager;
 import com.michaelflisar.universalloader.ULFragment;
 import com.michaelflisar.universalloader.data.ULFragmentLoaders;
 import com.michaelflisar.universalloader.data.ULKey;
@@ -37,7 +37,7 @@ public class TestLoaderFragment extends ULFragment
         PagerSlidingTabStrip indicator = (PagerSlidingTabStrip) v.findViewById(R.id.indicator);
         ViewPager pager = (ViewPager) v.findViewById(R.id.pager);
 
-        new ULPagerManager<TestPageFragment, ULFragmentPagerStateAdapter<TestPageFragment>>(pager, indicator, new ULFragmentPagerStateAdapter<TestPageFragment>(getChildFragmentManager())
+        new MPagerManager<TestPageFragment, MFragmentPagerStateAdapter<TestPageFragment>>(pager, indicator, new MFragmentPagerStateAdapter<TestPageFragment>(getChildFragmentManager())
         {
             @Override
             public TestPageFragment createFragment(int pos)
@@ -56,7 +56,6 @@ public class TestLoaderFragment extends ULFragment
             {
                 return "Page " + String.valueOf((pos + 1));
             }
-
         });
 
         return v;
