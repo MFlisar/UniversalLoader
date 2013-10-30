@@ -10,12 +10,12 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.astuetz.viewpager.extensions.PagerSlidingTabStrip;
+import com.michaelflisar.pagermanager.IPagerFragment;
+import com.michaelflisar.pagermanager.ULFragmentPagerStateAdapter;
+import com.michaelflisar.pagermanager.ULPagerManager;
 import com.michaelflisar.universalloader.ULFragment;
 import com.michaelflisar.universalloader.data.ULFragmentLoaders;
 import com.michaelflisar.universalloader.data.ULKey;
-import com.michaelflisar.universalloader.interfaces.IPagerFragment;
-import com.michaelflisar.universalloader.pager.ULFragmentPagerStateAdapter;
-import com.michaelflisar.universalloader.pager.ULPagerManager;
 
 public class TestLoaderFragment extends ULFragment
 {
