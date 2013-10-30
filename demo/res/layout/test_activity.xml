@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical" >
+
+    <fragment
+        android:id="@+id/test_fragment"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        class="com.michaelflisar.universalloader.demo.TestLoaderFragment" >
+    </fragment>
+
+    <Button
+        android:id="@+id/btReload"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="reload main data" />
+
+</LinearLayout>
