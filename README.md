@@ -3,7 +3,7 @@ UniversalLoader
 
 simple, automatic handling of loading and caching data for a fragment
 
-**Screenshots**, **description** and **usage** can be found at http://www.michaelflisar.com/message-bar/
+**Screenshots**, **description** and **usage** can be found at http://www.michaelflisar.com/universal-loader/
 
 License
 =======
@@ -21,7 +21,3 @@ License
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
-
- [1]: https://code.google.com/p/romannurik-code/source/browse/#git%2Fmisc%2Fundobar
- [2]: https://github.com/SimonVT
- [3]: https://play.google.com/store/apps/details?id=com.michaelflisar.messagebartest
