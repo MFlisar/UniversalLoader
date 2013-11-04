@@ -21,6 +21,6 @@ public class ULFragmentKey extends ULKey
     @Override
     public ULFragmentKey getSubKey(String subKey)
     {
-        return new ULFragmentKey(key, (this.subKey != null ? this.subKey : "") + subKey);
+        return new ULFragmentKey(key, (this.subKey != null ? this.subKey + "|": "") + subKey);
     }
 }

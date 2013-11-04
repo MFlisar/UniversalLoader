@@ -15,6 +15,7 @@ import com.michaelflisar.universalloader.UniversalLoader;
 import com.michaelflisar.universalloader.data.fragments.ULFragmentLoaders;
 import com.michaelflisar.universalloader.data.main.ULFragmentKey;
 import com.michaelflisar.universalloader.data.main.ULKey;
+import com.michaelflisar.universalloader.data.main.ULResult;
 import com.michaelflisar.universalloader.interfaces.IFragmentImplParent;
 import com.michaelflisar.universalloader.interfaces.IUniversalLoaderProvider;
 
@@ -124,6 +125,11 @@ public abstract class ULDialogFragment extends DialogFragment implements IFragme
     {
         mFragmentImpl.disableAutomaticLoadingOverlay();
     }
+    
+    public void onLoaderStarted()
+    {
+        
+    }
 
     // -----------------------------
     // abstract functions
@@ -131,7 +137,7 @@ public abstract class ULDialogFragment extends DialogFragment implements IFragme
 
     public abstract void onPrepareBuilder(Builder builder);
 
-    public abstract void onDataReceived(ULKey key, Object data);
+    public abstract void onDataReceived(ULKey key, ULResult result);
 
     public abstract View onCreateUserView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState);
 

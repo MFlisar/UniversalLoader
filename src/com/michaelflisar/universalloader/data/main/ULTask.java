@@ -10,7 +10,7 @@ import com.michaelflisar.universalloader.UniversalLoader;
 import com.michaelflisar.universalloader.helper.ULDebugger;
 import com.michaelflisar.universalloader.helper.ULDebugger.DebugMode;
 
-public class ULTask extends AsyncTask<Void, Void, Object>
+public class ULTask extends AsyncTask<Void, Void, ULResult>
 {
     private ULKey mKey;
     private WeakReference<UniversalLoader> mUniversalLoader;
@@ -30,18 +30,19 @@ public class ULTask extends AsyncTask<Void, Void, Object>
     }
 
     @Override
-    protected Object doInBackground(Void... params)
+    protected ULResult doInBackground(Void... params)
     {
         try
         {
             ULDebugger.debug(DebugMode.DETAILED, getClass(), "doInBackground: " + mKey);
-            return mCallable.call();
+            Object result = mCallable.call();
+            return new ULResult(result);
         }
         catch (Exception e)
         {
             ULDebugger.debug(DebugMode.DETAILED, getClass(), "doInBackground EXCEPTION: " + e.getMessage());
+            return new ULResult(e);
         }
-        return null;
     }
 
     @Override
@@ -54,7 +55,7 @@ public class ULTask extends AsyncTask<Void, Void, Object>
     }
 
     @Override
-    protected void onPostExecute(Object result)
+    protected void onPostExecute(ULResult result)
     {
         ULDebugger.debug(DebugMode.DETAILED, getClass(), "onPostExecute: " + mKey);
         UniversalLoader universalLoader = mUniversalLoader.get();

@@ -29,12 +29,12 @@ public class ULKey
     
     public ULKey getSubKey(String subKey)
     {
-        return new ULKey(key, (this.subKey != null ? this.subKey : "") + subKey);
+        return new ULKey(key, (this.subKey != null ? this.subKey + "|" : "") + subKey);
     }
     
     public boolean isSubKey(ULKey key)
     {
-        if (key.key.equals(key))
+        if (key.key.equals(this.key))
             return true;
         return false;
     }

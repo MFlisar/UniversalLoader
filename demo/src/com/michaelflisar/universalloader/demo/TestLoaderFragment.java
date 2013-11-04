@@ -17,6 +17,7 @@ import com.michaelflisar.universalloader.data.fragments.ULFragmentLoaderData.ULL
 import com.michaelflisar.universalloader.data.fragments.ULFragmentLoaders;
 import com.michaelflisar.universalloader.data.main.ULFragmentKey;
 import com.michaelflisar.universalloader.data.main.ULKey;
+import com.michaelflisar.universalloader.data.main.ULResult;
 import com.michaelflisar.universalloader.fragments.ULFragment;
 
 public class TestLoaderFragment extends ULFragment
@@ -69,7 +70,7 @@ public class TestLoaderFragment extends ULFragment
     }
 
     @Override
-    public void onDataReceived(ULKey key, Object data)
+    public void onDataReceived(ULKey key, ULResult result)
     {
         // data availabel
 
@@ -143,9 +144,9 @@ public class TestLoaderFragment extends ULFragment
         }
 
         @Override
-        public void onDataReceived(ULKey key, Object data)
+        public void onDataReceived(ULKey key, ULResult result)
         {
-            updateView(getView(), key, data);
+            updateView(getView(), key, result);
         }
 
         @Override
@@ -154,17 +155,17 @@ public class TestLoaderFragment extends ULFragment
             return Helper.getTestFragmentView(getActivity(), this);
         }
         
-        private void updateView(View v, ULKey key, Object data)
+        private void updateView(View v, ULKey key, ULResult result)
         {
             if (key.equals(key1))
             {
                 TextView tv1 = (TextView) v.findViewById(android.R.id.text1);
-                tv1.setText(((String) data) + " (count: " + count1 + ")");
+                tv1.setText(((String) result.get()) + " (count: " + count1 + ")");
             }
             else if (key.equals(key2))
             {
                 TextView tv2 = (TextView) v.findViewById(android.R.id.text2);
-                tv2.setText(((String) data) + " (count: " + count2 + ")");
+                tv2.setText(((String) result.get()) + " (count: " + count2 + ")");
             }
         }
 

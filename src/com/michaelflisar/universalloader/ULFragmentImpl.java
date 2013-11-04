@@ -9,6 +9,7 @@ import com.michaelflisar.universalloader.data.fragments.ULFragmentLoaderData.ULL
 import com.michaelflisar.universalloader.data.fragments.ULFragmentLoaders;
 import com.michaelflisar.universalloader.data.main.ULFragmentKey;
 import com.michaelflisar.universalloader.data.main.ULKey;
+import com.michaelflisar.universalloader.data.main.ULResult;
 import com.michaelflisar.universalloader.helper.ULDebugger;
 import com.michaelflisar.universalloader.helper.ULDebugger.DebugMode;
 import com.michaelflisar.universalloader.interfaces.IFragmentImplParent;
@@ -135,13 +136,15 @@ public class ULFragmentImpl implements IUniversalLoaderListener
     {
         if (mAutomaticLoadingOverlayEnabled)
             setLoadingState(true);
+        if (mParent != null)
+            mParent.onLoaderStarted();
     }
 
     @Override
-    public void onDataReceived(ULKey key, Object data)
+    public void onDataReceived(ULKey key, ULResult result)
     {
         ULDebugger.debug(DebugMode.SIMPLE, getClass(), "onDataReceived: " + key);
-        mParent.onDataReceived(key, data);
+        mParent.onDataReceived(key, result);
         if (mAutomaticLoadingOverlayEnabled && mProvider != null)
         {
             // check if ALL loaders have loaded their data

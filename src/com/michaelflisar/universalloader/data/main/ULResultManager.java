@@ -10,22 +10,22 @@ import java.util.Set;
 
 public class ULResultManager
 {
-    private Map<ULKey, Object> mResults;
+    private Map<ULKey, ULResult> mResults;
     private Set<ULKey> mUndelivered;
 
     public ULResultManager()
     {
-        mResults = new HashMap<ULKey, Object>();
+        mResults = new HashMap<ULKey, ULResult>();
         mUndelivered = new HashSet<ULKey>();
     }
 
-    public void put(ULKey key, Object result)
+    public void put(ULKey key, ULResult result)
     {
         mResults.put(key, result);
         mUndelivered.add(key);
     }
 
-    public Object get(ULKey key)
+    public ULResult get(ULKey key)
     {
         return mResults.get(key);
     }
@@ -47,7 +47,7 @@ public class ULResultManager
         mResults.remove(key);
     }
 
-    public Iterator<Entry<ULKey, Object>> iterator()
+    public Iterator<Entry<ULKey, ULResult>> iterator()
     {
         return mResults.entrySet().iterator();
     }

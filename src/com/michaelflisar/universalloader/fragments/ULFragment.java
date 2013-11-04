@@ -12,6 +12,7 @@ import com.michaelflisar.universalloader.UniversalLoader;
 import com.michaelflisar.universalloader.data.fragments.ULFragmentLoaders;
 import com.michaelflisar.universalloader.data.main.ULFragmentKey;
 import com.michaelflisar.universalloader.data.main.ULKey;
+import com.michaelflisar.universalloader.data.main.ULResult;
 import com.michaelflisar.universalloader.interfaces.IFragmentImplParent;
 import com.michaelflisar.universalloader.interfaces.IUniversalLoaderProvider;
 
@@ -116,12 +117,17 @@ public abstract class ULFragment extends Fragment implements IFragmentImplParent
     {
         mFragmentImpl.setLoadingState(enabled);
     }
+    
+    public void onLoaderStarted()
+    {
+        
+    }
 
     // -----------------------------
     // abstract functions
     // -----------------------------
 
-    public abstract void onDataReceived(ULKey key, Object data);
+    public abstract void onDataReceived(ULKey key, ULResult result);
 
     public abstract View onCreateUserView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState);
 

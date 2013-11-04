@@ -16,6 +16,7 @@ import com.michaelflisar.universalloader.data.fragments.ULFragmentLoaders;
 import com.michaelflisar.universalloader.data.main.ULFragmentKey;
 import com.michaelflisar.universalloader.data.main.ULKey;
 import com.michaelflisar.universalloader.data.main.ULLoaderDataManager;
+import com.michaelflisar.universalloader.data.main.ULResult;
 import com.michaelflisar.universalloader.data.main.ULResultManager;
 import com.michaelflisar.universalloader.data.main.ULTask;
 import com.michaelflisar.universalloader.data.main.ULTaskManager;
@@ -61,7 +62,7 @@ public class UniversalLoader extends Fragment
     // data functions
     // -----------------------------
 
-    public void putResult(ULKey key, Object result)
+    public void putResult(ULKey key, ULResult result)
     {
         synchronized (mLock)
         {
@@ -71,12 +72,12 @@ public class UniversalLoader extends Fragment
         }
     }
 
-    public Object getResult(ULKey key)
+    public ULResult getResult(ULKey key)
     {
         return mResult.get(key);
     }
 
-    public Object getUndeliveredData(ULKey key)
+    public ULResult getUndeliveredData(ULKey key)
     {
         if (mResult.setDelivered(key))
             return mResult.get(key);
@@ -117,10 +118,10 @@ public class UniversalLoader extends Fragment
     {
         synchronized (mLock)
         {
-            Iterator<Entry<ULKey, Object>> it = mResult.iterator();
+            Iterator<Entry<ULKey, ULResult>> it = mResult.iterator();
             while (it.hasNext())
             {
-                Entry<ULKey, Object> entry = it.next();
+                Entry<ULKey, ULResult> entry = it.next();
                 if (parentKey.isSubKey(entry.getKey()))
                 {
                     ULTask t = mTasks.remove(entry.getKey());
@@ -234,7 +235,7 @@ public class UniversalLoader extends Fragment
         }
     }
 
-    private void notifyListeners(ULKey key, Object data)
+    private void notifyListeners(ULKey key, ULResult result)
     {
         Iterator<IUniversalLoaderListener> iterator = mLoaderFinishedListeners.iterator();
         while (iterator.hasNext())
@@ -245,7 +246,7 @@ public class UniversalLoader extends Fragment
                 if (mLoaderData.getLoaders(listener.getFragmentKey()).contains(key))
                 {
                     mResult.setDelivered(key);
-                    listener.onDataReceived(key, data);
+                    listener.onDataReceived(key, result);
                 }
             }
         }
@@ -267,7 +268,7 @@ public class UniversalLoader extends Fragment
             while (it.hasNext())
             {
                 Entry<ULKey, ULFragmentLoaderData> entry = it.next();
-                Object result = mResult.get(entry.getKey());
+                ULResult result = mResult.get(entry.getKey());
                 if (entry.getValue().getType() == type && result != null)
                 {
                     mResult.setDelivered(entry.getKey());
