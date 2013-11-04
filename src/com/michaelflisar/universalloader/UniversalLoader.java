@@ -1,199 +1,287 @@
 
 package com.michaelflisar.universalloader;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map.Entry;
-import java.util.WeakHashMap;
-import java.util.concurrent.Callable;
+import java.util.Set;
+import java.util.concurrent.Executor;
 
-import android.os.Bundle;
+import android.os.AsyncTask;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.LoaderManager.LoaderCallbacks;
-import android.support.v4.content.Loader;
 
-import com.michaelflisar.universalloader.data.ULData;
-import com.michaelflisar.universalloader.data.ULFragmentLoaders;
-import com.michaelflisar.universalloader.data.ULKey;
-import com.michaelflisar.universalloader.data.ULLoaderManager;
-import com.michaelflisar.universalloader.helper.ULDebugger;
-import com.michaelflisar.universalloader.helper.ULDebugger.DEBUG_MODE;
-import com.michaelflisar.universalloader.interfaces.ILoaderFinishedListener;
+import com.michaelflisar.universalloader.data.fragments.ULFragmentLoaderData;
+import com.michaelflisar.universalloader.data.fragments.ULFragmentLoaderData.ULLoaderType;
+import com.michaelflisar.universalloader.data.fragments.ULFragmentLoaders;
+import com.michaelflisar.universalloader.data.main.ULFragmentKey;
+import com.michaelflisar.universalloader.data.main.ULKey;
+import com.michaelflisar.universalloader.data.main.ULLoaderDataManager;
+import com.michaelflisar.universalloader.data.main.ULResultManager;
+import com.michaelflisar.universalloader.data.main.ULTask;
+import com.michaelflisar.universalloader.data.main.ULTaskManager;
+import com.michaelflisar.universalloader.interfaces.IUniversalLoaderListener;
 
-public class UniversalLoader extends Fragment implements LoaderCallbacks<Object>
+public class UniversalLoader extends Fragment
 {
-    private FragmentActivity mParent = null;
+    private static final Object mLock = new Object();
 
-    private ULData mData = new ULData();
-    private int mLastLoaderID = 0;
+    private ULTaskManager mTasks = new ULTaskManager();
+    private ULLoaderDataManager mLoaderData = new ULLoaderDataManager();
+    private ULResultManager mResult = new ULResultManager();
 
-    private ULLoaderManager mLoaderManager = null;
+    private Set<IUniversalLoaderListener> mLoaderFinishedListeners = new HashSet<IUniversalLoaderListener>();
 
-    private WeakHashMap<ILoaderFinishedListener, Void> mLoaderFinishedListeners = new WeakHashMap<ILoaderFinishedListener, Void>();
+    private Executor mExecutor = null;
 
     public UniversalLoader()
     {
         super();
         setRetainInstance(true);
-
-        mLoaderManager = new ULLoaderManager();
-        mLoaderFinishedListeners = new WeakHashMap<ILoaderFinishedListener, Void>();
-    }
-
-    public void updateParent(FragmentActivity parent)
-    {
-        mParent = parent;
+        mExecutor = AsyncTask.THREAD_POOL_EXECUTOR;
     }
 
     @Override
     public void onDestroy()
     {
-        mParent = null;
-        mLoaderManager.releaseAllResources();
-        mLoaderManager = null;
         mLoaderFinishedListeners.clear();
-        mLoaderFinishedListeners = null;
+        Iterator<Entry<ULKey, ULTask>> it = mTasks.iterator();
+        while (it.hasNext())
+            it.next().getValue().cancel(true);
+        mResult.clear();
+        mLoaderData.clear();
         super.onDestroy();
     }
 
-    // ----------------------------------
-    // loader relevant functions
-    // ----------------------------------
-
-    public synchronized int getNewLoaderID()
+    public void disableMulitThread()
     {
-        mLastLoaderID++;
-        return mLastLoaderID;
+        mExecutor = AsyncTask.SERIAL_EXECUTOR;
     }
 
-    public void register(ILoaderFinishedListener listener)
+    // -----------------------------
+    // data functions
+    // -----------------------------
+
+    public void putResult(ULKey key, Object result)
     {
-        mLoaderFinishedListeners.put(listener, null);
+        synchronized (mLock)
+        {
+            removeTask(key);
+            mResult.put(key, result);
+            notifyListeners(key, result);
+        }
     }
 
-    public void addCallable(ULKey key, Callable<Object> callable)
+    public Object getResult(ULKey key)
     {
-        int id = getNewLoaderID();
-        mLoaderManager.addLoader(id, key, callable);
-        initLoader(id, null);
+        return mResult.get(key);
     }
 
-    public synchronized boolean isAllDataLoaded(ULFragmentLoaders loaders)
+    public Object getUndeliveredData(ULKey key)
     {
-        Iterator<Entry<ULKey, Callable<Object>>> it = loaders.getIterator();
+        if (mResult.setDelivered(key))
+            return mResult.get(key);
+        return null;
+    }
+
+    public boolean isAllDataLoaded(ULFragmentKey fKey)
+    {
+        return isAllDataLoaded(mLoaderData.getLoaders(fKey));
+    }
+
+    public boolean isAllDataLoaded(ULFragmentLoaders loaders)
+    {
+        synchronized (mLock)
+        {
+            Iterator<Entry<ULKey, ULFragmentLoaderData>> it = loaders.iterator();
+            while (it.hasNext())
+            {
+                if (mResult.get(it.next().getKey()) == null)
+                    return false;
+            }
+            return true;
+        }
+    }
+
+    public void clearData(ULKey key)
+    {
+        synchronized (mLock)
+        {
+            ULTask t = mTasks.remove(key);
+            if (t != null)
+                t.cancel(true);
+            mResult.clear(key);
+        }
+    }
+
+    public void clearAllSubData(ULKey parentKey)
+    {
+        synchronized (mLock)
+        {
+            Iterator<Entry<ULKey, Object>> it = mResult.iterator();
+            while (it.hasNext())
+            {
+                Entry<ULKey, Object> entry = it.next();
+                if (parentKey.isSubKey(entry.getKey()))
+                {
+                    ULTask t = mTasks.remove(entry.getKey());
+                    if (t != null)
+                        t.cancel(true);
+                    it.remove();
+                }
+            }
+        }
+    }
+
+    // -----------------------------
+    // data functions
+    // -----------------------------
+
+    public void putLoaderData(ULFragmentKey fKey, ULFragmentLoaders loaders)
+    {
+        synchronized (mLock)
+        {
+            mLoaderData.put(fKey, loaders);
+        }
+    }
+
+    // -----------------------------
+    // task functions
+    // -----------------------------
+
+    private void startTask(ULKey key, ULFragmentLoaderData loaderData)
+    {
+        synchronized (mLock)
+        {
+            // 1) check if data already exists
+            if (mResult.get(key) != null)
+                return;
+
+            // 2) report that task is started/working
+            notifyListenersAboutStart(key);
+
+            // 3) check if data is already loading
+            if (mTasks.get(key) != null)
+                return;
+            // 4) create new task and start it
+            else
+            {
+                ULTask task = new ULTask(key, this, loaderData.getCallable());
+                mTasks.put(key, task);
+                task.executeOnExecutor(mExecutor);
+            }
+        }
+    }
+
+    public void removeTask(ULKey key)
+    {
+        synchronized (mLock)
+        {
+            mTasks.remove(key);
+        }
+    }
+
+    // -----------------------------
+    // loader functions
+    // -----------------------------
+
+    public void startAllLoadersAutomatically(ULFragmentKey fKey, ULLoaderType type)
+    {
+        Iterator<Entry<ULKey, ULFragmentLoaderData>> it = mLoaderData.iterator(fKey);
         while (it.hasNext())
         {
-            if (mData.get(it.next().getKey()) == null)
-                return false;
-        }
-        return true;
-    }
-
-    private void initLoader(int id, Bundle bundle)
-    {
-        mParent.getSupportLoaderManager().initLoader(id, bundle, this);
-    }
-
-    public void restartLoader(ULKey key, Bundle bundle)
-    {
-        mData.clear(key);
-        int id = mLoaderManager.getLoaderID(key);
-        onLoaderRestarted(id);
-        mParent.getSupportLoaderManager().restartLoader(id, bundle, this);
-    }
-
-    // ----------------------------------
-    // loader callbacks implementation
-    // ----------------------------------
-
-    @Override
-    public void onLoaderReset(Loader<Object> loader)
-    {
-        ULDebugger.debug(DEBUG_MODE.SIMPLE, getClass(), "onLoaderReset: " + getDebugIdAndKey(loader.getId()));
-        // mRetainedFragment.clearData(loader.getId());
-    }
-
-    @Override
-    public void onLoadFinished(Loader<Object> loader, Object data)
-    {
-        ULDebugger.debug(DEBUG_MODE.SIMPLE, getClass(), "onLoadFinished: " + getDebugIdAndKey(loader.getId()));
-        mData.set(mLoaderManager.getLoaderKey(loader.getId()), data);
-        onLoaderFinishedAndDataIsAvailable(loader.getId());
-    }
-
-    @Override
-    public Loader<Object> onCreateLoader(int id, Bundle args)
-    {
-        ULDebugger.debug(DEBUG_MODE.SIMPLE, getClass(), "onCreateLoader: " + getDebugIdAndKey(id));
-        return mLoaderManager.createLoader(mParent, this, id);
-    }
-
-    public void onLoaderRestarted(int id)
-    {
-        ULKey key = mLoaderManager.getLoaderKey(id);
-        Iterator<ILoaderFinishedListener> iterator = mLoaderFinishedListeners.keySet().iterator();
-        while (iterator.hasNext())
-        {
-            ILoaderFinishedListener listener = iterator.next();
-            if (listener != null)
+            Entry<ULKey, ULFragmentLoaderData> entry = it.next();
+            if (entry.getValue().getType() == type && !entry.getValue().wasStarted())
             {
-                if (listener.containsKey(key))
-                    listener.onLoaderRestarted(key);
+                entry.getValue().setWasStarted();
+                startLoader(entry.getKey(), entry.getValue());
             }
         }
     }
 
-    private void onLoaderFinishedAndDataIsAvailable(int id)
+    public void startLoader(ULFragmentKey fKey, ULKey key)
     {
-        ULKey key = mLoaderManager.getLoaderKey(id);
-        onLoaderFinishedAndDataIsAvailable(key);
+        startLoader(key, mLoaderData.getLoaderData(fKey, key));
     }
     
-    public void onLoaderFinishedAndDataIsAvailable(ULKey key)
+    public void restartLoader(ULFragmentKey fKey, ULKey key)
     {
-        Iterator<ILoaderFinishedListener> iterator = mLoaderFinishedListeners.keySet().iterator();
+        clearData(key);
+        startLoader(fKey, key);
+    }
+
+    private void startLoader(ULKey key, ULFragmentLoaderData data)
+    {
+        startTask(key, data);
+    }
+
+    // -----------------------------
+    // listener functions
+    // -----------------------------
+
+    private void notifyListenersAboutStart(ULKey key)
+    {
+        Iterator<IUniversalLoaderListener> iterator = mLoaderFinishedListeners.iterator();
         while (iterator.hasNext())
         {
-            Object data = mData.get(key);
-            ILoaderFinishedListener listener = iterator.next();
+            IUniversalLoaderListener listener = iterator.next();
             if (listener != null)
             {
-                if (listener.containsKey(key))
-                    listener.onLoaderFinished(key, data);
+                if (mLoaderData.getLoaders(listener.getFragmentKey()).contains(key))
+                {
+                    listener.onLoaderStarted();
+                }
             }
         }
     }
-    
-    // ----------------------------------
-    // helper functions
-    // ----------------------------------
-    
-    private String getDebugIdAndKey(int id)
+
+    private void notifyListeners(ULKey key, Object data)
     {
-        if (mLoaderManager == null)
-            return "NULL";
-        ULKey key = mLoaderManager.getLoaderKey(id);
-        if (key != null)
-            return id + "|" + key.toString();
-        return id + "|NULL";
+        Iterator<IUniversalLoaderListener> iterator = mLoaderFinishedListeners.iterator();
+        while (iterator.hasNext())
+        {
+            IUniversalLoaderListener listener = iterator.next();
+            if (listener != null)
+            {
+                if (mLoaderData.getLoaders(listener.getFragmentKey()).contains(key))
+                {
+                    mResult.setDelivered(key);
+                    listener.onDataReceived(key, data);
+                }
+            }
+        }
     }
 
-    // ----------------------------------
-    // getter/setter
-    // ----------------------------------
-
-    public ULData getData()
+    public void register(IUniversalLoaderListener listener, boolean deliverAlreadyLoadedData, ULLoaderType type)
     {
-        return mData;
+        synchronized (mLock)
+        {
+            mLoaderFinishedListeners.add(listener);
+        }
     }
 
-    public Object getData(ULKey key)
+    public void deliverAlreadyLoadedData(IUniversalLoaderListener listener, ULLoaderType type)
     {
-        return mData.get(key);
+        synchronized (mLock)
+        {
+            Iterator<Entry<ULKey, ULFragmentLoaderData>> it = mLoaderData.getLoaders(listener.getFragmentKey()).iterator();
+            while (it.hasNext())
+            {
+                Entry<ULKey, ULFragmentLoaderData> entry = it.next();
+                Object result = mResult.get(entry.getKey());
+                if (entry.getValue().getType() == type && result != null)
+                {
+                    mResult.setDelivered(entry.getKey());
+                    listener.onDataReceived(entry.getKey(), result);
+                }
+            }
+        }
     }
-    
-    public void setData(ULKey key, Object data)
+
+    public void unregister(IUniversalLoaderListener listener)
     {
-        mData.set(key, data);
+        synchronized (mLock)
+        {
+            mLoaderFinishedListeners.remove(listener);
+        }
     }
 }

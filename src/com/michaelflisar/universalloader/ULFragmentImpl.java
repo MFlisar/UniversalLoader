@@ -1,89 +1,117 @@
 
 package com.michaelflisar.universalloader;
 
-import java.util.Iterator;
-import java.util.Map.Entry;
-import java.util.concurrent.Callable;
-
-import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.michaelflisar.universalloader.data.ULFragmentLoaders;
-import com.michaelflisar.universalloader.data.ULKey;
-import com.michaelflisar.universalloader.interfaces.ILoaderFinishedListener;
+import com.michaelflisar.universalloader.data.fragments.ULFragmentLoaderData.ULLoaderType;
+import com.michaelflisar.universalloader.data.fragments.ULFragmentLoaders;
+import com.michaelflisar.universalloader.data.main.ULFragmentKey;
+import com.michaelflisar.universalloader.data.main.ULKey;
+import com.michaelflisar.universalloader.helper.ULDebugger;
+import com.michaelflisar.universalloader.helper.ULDebugger.DebugMode;
+import com.michaelflisar.universalloader.interfaces.IFragmentImplParent;
+import com.michaelflisar.universalloader.interfaces.IUniversalLoaderListener;
+import com.michaelflisar.universalloader.interfaces.IUniversalLoaderProvider;
 import com.michaelflisar.universalloaderfragment.R;
 
-public class ULFragmentImpl
+public class ULFragmentImpl implements IUniversalLoaderListener
 {
-    private boolean mViewExists = false;
+    private IFragmentImplParent mParent = null;
+    private ULFragmentKey mFKey = null;
+    private IUniversalLoaderProvider mProvider = null;
+
     private ViewGroup mMainView = null;
     private View mLoadingView = null;
-    private ULFragmentLoaders mLoaders = null;
 
-    public ULFragmentImpl(ULFragmentLoaders loaders)
+    private boolean mAutomaticLoadingOverlayEnabled = true;
+
+    public ULFragmentImpl(IFragmentImplParent parent)
     {
-        this.mLoaders = loaders;
+        mParent = parent;
+        mFKey = mParent.createFragmentKey();
     }
 
-    public ViewGroup onCreateMainView(LayoutInflater inflater, ViewGroup container, boolean showLoadingOverlayAutomatically, View userView)
+    // -----------------------------
+    // handling fragment functions
+    // ordered by lifecycle
+    // -----------------------------
+
+    public void onAttach()
+    {
+
+    }
+
+    public void onCreate()
+    {
+
+    }
+
+    public ViewGroup onCreateView(LayoutInflater inflater, ViewGroup container, View userView)
     {
         mMainView = (ViewGroup) inflater.inflate(R.layout.loader_fragment, container, false);
         mLoadingView = mMainView.findViewById(R.id.loading_overlay);
-        if (!showLoadingOverlayAutomatically)
-            setLoadingState(false);
         mMainView.addView(userView, 0);
         return mMainView;
     }
 
-    public void onViewCreated(UniversalLoader universalLoader, ILoaderFinishedListener fragment)
+    public void onActivityCreated(IUniversalLoaderProvider provider, ULFragmentLoaders loaders)
     {
-        mViewExists = true;
-        if (universalLoader != null)
-            universalLoader.register(fragment);
+        mProvider = provider;
+        mProvider.getUniversalLoader().putLoaderData(mFKey, loaders);
+        mProvider.getUniversalLoader().register(this, true, ULLoaderType.OnViewCreated);
+        mProvider.getUniversalLoader().deliverAlreadyLoadedData(this, ULLoaderType.OnViewCreated);
+        mProvider.getUniversalLoader().startAllLoadersAutomatically(mFKey, ULLoaderType.OnViewCreated);
     }
 
-    public void onDestroyView(UniversalLoader universalLoader, ILoaderFinishedListener fragment)
+    public void onStart()
     {
-        mViewExists = false;
+        mProvider.getUniversalLoader().deliverAlreadyLoadedData(this, ULLoaderType.OnStart);
+        mProvider.getUniversalLoader().startAllLoadersAutomatically(mFKey, ULLoaderType.OnStart);
+    }
+
+    public void onResume()
+    {
+        if (mAutomaticLoadingOverlayEnabled && mProvider.getUniversalLoader().isAllDataLoaded(mFKey))
+            setLoadingState(false);
+    }
+
+    public void onPause()
+    {
+
+    }
+
+    public void onStop()
+    {
+
+    }
+
+    public void onDestroyView()
+    {
+        mProvider.getUniversalLoader().unregister(this);
         mMainView = null;
         mLoadingView = null;
     }
 
     public void onDestroy()
     {
-        mLoaders = null;
+        mParent = null;
+        mProvider = null;
     }
 
-    public void onActivityCreated(UniversalLoader universalLoader, ILoaderFinishedListener fragment, boolean automaticLoadingOverlayEnabled, Bundle savedInstanceState)
+    public void onDetach()
     {
-        // // 1) start a new loader or get already loaded data and send it to the listener
-        // Iterator<Entry<ULKey, Callable<Object>>> it = mLoaders.getIterator();
-        // while (it.hasNext())
-        // {
-        // Entry<ULKey, Callable<Object>> entry = it.next();
-        // Object data = universalLoader.getData(entry.getKey());
-        // if (data == null)
-        // universalLoader.addCallable(entry.getKey(), entry.getValue());
-        // else
-        // universalLoader.onLoaderFinishedAndDataIsAvailable(entry.getKey());
-        // }
+
     }
 
-    public void onResume(UniversalLoader universalLoader)
+    // -----------------------------
+    // functions
+    // -----------------------------
+
+    public void disableAutomaticLoadingOverlay()
     {
-        // Prepare the loader - either reconnect with an existing one or start a new one
-        Iterator<Entry<ULKey, Callable<Object>>> it = mLoaders.getIterator();
-        while (it.hasNext())
-        {
-            Entry<ULKey, Callable<Object>> entry = it.next();
-            Object data = universalLoader.getData(entry.getKey());
-            if (data == null)
-                universalLoader.addCallable(entry.getKey(), entry.getValue());
-            else
-                universalLoader.onLoaderFinishedAndDataIsAvailable(entry.getKey());
-        }
+        mAutomaticLoadingOverlayEnabled = false;
     }
 
     public void setLoadingState(boolean enabled)
@@ -92,34 +120,33 @@ public class ULFragmentImpl
             mLoadingView.setVisibility(enabled ? View.VISIBLE : View.GONE);
     }
 
-    public boolean containsKey(ULKey key)
-    {
-        if (mLoaders != null && mLoaders.contains(key))
-            return true;
-        return false;
-    }
-
-    public ULFragmentLoaders getLoaders()
-    {
-        return mLoaders;
-    }
-
-    public boolean existsView()
-    {
-        return mViewExists;
-    }
-
     // ------------------
-    // loader functions
+    // IUniversalLoader callbacks
     // ------------------
 
-    public void onLoaderFinished(UniversalLoader universalLoader, ULKey key, Object data, boolean automaticLoadingOverlayEnabled)
+    @Override
+    public ULFragmentKey getFragmentKey()
     {
-        if (automaticLoadingOverlayEnabled && universalLoader != null)
+        return mFKey;
+    }
+
+    @Override
+    public void onLoaderStarted()
+    {
+        if (mAutomaticLoadingOverlayEnabled)
+            setLoadingState(true);
+    }
+
+    @Override
+    public void onDataReceived(ULKey key, Object data)
+    {
+        ULDebugger.debug(DebugMode.SIMPLE, getClass(), "onDataReceived: " + key);
+        if (mAutomaticLoadingOverlayEnabled && mProvider != null)
         {
             // check if ALL loaders have loaded their data
-            if (universalLoader != null && universalLoader.isAllDataLoaded(mLoaders))
+            if (mProvider.getUniversalLoader().isAllDataLoaded(mFKey))
                 setLoadingState(false);
         }
+        mParent.onDataReceived(key, data);
     }
 }

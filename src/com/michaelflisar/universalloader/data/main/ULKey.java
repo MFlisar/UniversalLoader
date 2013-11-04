@@ -1,11 +1,11 @@
 
-package com.michaelflisar.universalloader.data;
+package com.michaelflisar.universalloader.data.main;
 
 
 public class ULKey
 {
-    private String mKey = null;
-    private String mSubKey = null;
+    protected String key = null;
+    protected String subKey = null;
 
     // -----------------
     // constructors
@@ -13,28 +13,28 @@ public class ULKey
 
     public ULKey(String key)
     {
-        mKey = key;
+        this.key = key;
     }
     
     public ULKey(String key, String subKey)
     {
-        mKey = key;
-        mSubKey = subKey;
+        this.key = key;
+        this.subKey = subKey;
     }
 
     public ULKey(Class<?> c)
     {
-        mKey = c.getName();
+        key = c.getName();
     }
     
     public ULKey getSubKey(String subKey)
     {
-        return new ULKey(mKey, subKey);
+        return new ULKey(key, (this.subKey != null ? this.subKey : "") + subKey);
     }
     
     public boolean isSubKey(ULKey key)
     {
-        if (key.mKey.equals(mKey))
+        if (key.key.equals(key))
             return true;
         return false;
     }
@@ -45,7 +45,7 @@ public class ULKey
 
     public String toString()
     {
-        return mKey + (mSubKey != null ? "|" + mSubKey : "");
+        return key + (subKey != null ? "|" + subKey : "");
     }
 
     @Override

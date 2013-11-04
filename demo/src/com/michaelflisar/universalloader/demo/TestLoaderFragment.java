@@ -13,19 +13,21 @@ import com.astuetz.viewpager.extensions.PagerSlidingTabStrip;
 import com.michaelflisar.pagermanager.IPagerFragment;
 import com.michaelflisar.pagermanager.MFragmentPagerStateAdapter;
 import com.michaelflisar.pagermanager.MPagerManager;
-import com.michaelflisar.universalloader.ULFragment;
-import com.michaelflisar.universalloader.data.ULFragmentLoaders;
-import com.michaelflisar.universalloader.data.ULKey;
+import com.michaelflisar.universalloader.data.fragments.ULFragmentLoaderData.ULLoaderType;
+import com.michaelflisar.universalloader.data.fragments.ULFragmentLoaders;
+import com.michaelflisar.universalloader.data.main.ULFragmentKey;
+import com.michaelflisar.universalloader.data.main.ULKey;
+import com.michaelflisar.universalloader.fragments.ULFragment;
 
 public class TestLoaderFragment extends ULFragment
 {
-    public static final ULKey KEY = new ULKey(TestLoaderFragment.class);
-    
+    public static final ULKey KEY = new ULKey(TestLoaderFragment.class.getSimpleName());
+
     @Override
     public ULFragmentLoaders createLoaders()
     {
         ULFragmentLoaders loaders = new ULFragmentLoaders();
-        loaders.add(KEY, Helper.getCallable(2));
+        loaders.add(KEY, Helper.getCallable(2), ULLoaderType.OnViewCreated);
         return loaders;
     }
 
@@ -61,6 +63,24 @@ public class TestLoaderFragment extends ULFragment
         return v;
     }
 
+    public void reload()
+    {
+        getUniversalLoader().restartLoader(getFragmentKey(), KEY);
+    }
+
+    @Override
+    public void onDataReceived(ULKey key, Object data)
+    {
+        // data availabel
+
+    }
+
+    @Override
+    public ULFragmentKey createFragmentKey()
+    {
+        return new ULFragmentKey(getClass().getSimpleName());
+    }
+
     public static class TestPageFragment extends ULFragment implements IPagerFragment, OnClickListener
     {
         private int mPos;
@@ -81,15 +101,15 @@ public class TestLoaderFragment extends ULFragment
 
         @Override
         public void onCreate(Bundle savedInstanceState)
-        { 
+        {
             mPos = getArguments() != null ? getArguments().getInt("pos") : 0;
-            
+
             // create a unique key for every loader task
             // do this ALWAYS BEFORE onCreate, the loader may be loading data and wants to put it's result
             // to the retained fragment
-            key1 = new ULKey(getClass().getName().toString() + "|" + 1 + "|" + mPos);
-            key2 = new ULKey(getClass().getName().toString() + "|" + 2 + "|" + mPos);
-            
+            key1 = new ULKey(getClass().getSimpleName().toString()).getSubKey("Task1|" + mPos);
+            key2 = new ULKey(getClass().getSimpleName().toString()).getSubKey("Task2|" + mPos);
+
             super.onCreate(savedInstanceState);
 
             if (savedInstanceState != null)
@@ -106,24 +126,36 @@ public class TestLoaderFragment extends ULFragment
             outState.putInt("count1", count1);
             outState.putInt("count2", count2);
         }
-        
+
+        @Override
+        public ULFragmentKey createFragmentKey()
+        {
+            return new ULFragmentKey(getClass().getSimpleName() + mPos);
+        }
+
         @Override
         public ULFragmentLoaders createLoaders()
         {
             ULFragmentLoaders loaders = new ULFragmentLoaders();
-            loaders.add(key1, Helper.getCallable(3));
-            loaders.add(key2, Helper.getCallable(4));
+            loaders.add(key1, Helper.getCallable(3), ULLoaderType.OnViewCreated);
+            loaders.add(key2, Helper.getCallable(4), ULLoaderType.OnViewCreated);
             return loaders;
         }
-        
+
         @Override
-        public void onLoaderFinished(View v, ULKey key, Object data)
+        public void onDataReceived(ULKey key, Object data)
         {
-            if (v == null)
-                return;
+            updateView(getView(), key, data);
+        }
 
-            // use this functions to update UI incrementally
-
+        @Override
+        public View onCreateUserView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
+        {
+            return Helper.getTestFragmentView(getActivity(), this);
+        }
+        
+        private void updateView(View v, ULKey key, Object data)
+        {
             if (key.equals(key1))
             {
                 TextView tv1 = (TextView) v.findViewById(android.R.id.text1);
@@ -134,12 +166,6 @@ public class TestLoaderFragment extends ULFragment
                 TextView tv2 = (TextView) v.findViewById(android.R.id.text2);
                 tv2.setText(((String) data) + " (count: " + count2 + ")");
             }
-        }
-
-        @Override
-        public View onCreateUserView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
-        {
-            return Helper.getTestFragmentView(getActivity(), this);
         }
 
         @Override
@@ -166,14 +192,13 @@ public class TestLoaderFragment extends ULFragment
             {
                 count1++;
                 count2++;
-                getUniversalLoader().restartLoader(key1, null);
-                getUniversalLoader().restartLoader(key2, null);
+                getUniversalLoader().restartLoader(getFragmentKey(), key1);
+                getUniversalLoader().restartLoader(getFragmentKey(), key2);
                 return;
             }
 
-            getUniversalLoader().restartLoader(key, null);
+            getUniversalLoader().restartLoader(getFragmentKey(), key);
         }
 
-        
-    }    
+    }
 }

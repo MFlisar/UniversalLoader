@@ -15,7 +15,6 @@ public class ULActivity extends FragmentActivity implements IUniversalLoaderProv
     {
         super.onCreate(savedInstanceState);
         mUniversalLoader = ULHelper.getUniversalLoader(this, true);
-        mUniversalLoader.updateParent(this);
     }
 
     // ------------------

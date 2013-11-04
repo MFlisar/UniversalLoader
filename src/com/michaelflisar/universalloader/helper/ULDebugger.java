@@ -7,16 +7,16 @@ import com.michaelflisar.universalloader.UniversalLoader;
 
 public class ULDebugger
 {
-    public static enum DEBUG_MODE
+    public static enum DebugMode
     {
         SIMPLE,
         DETAILED
     }
 
     private static boolean mDebugEnabled = false;
-    private static DEBUG_MODE mDebugMode = DEBUG_MODE.SIMPLE;
+    private static DebugMode mDebugMode = DebugMode.SIMPLE;
     
-    public static void setDebugger(boolean enabled, DEBUG_MODE mode)
+    public static void setDebugger(boolean enabled, DebugMode mode)
     {
         setDebug(enabled);
         setMode(mode);
@@ -27,25 +27,25 @@ public class ULDebugger
         mDebugEnabled = enabled;
     }
 
-    protected static void setMode(DEBUG_MODE mode)
+    protected static void setMode(DebugMode mode)
     {
         mDebugMode = mode;
     }
 
-    private static boolean isDebugRelevant(DEBUG_MODE mode)
+    private static boolean isDebugRelevant(DebugMode mode)
     {
         if (mDebugEnabled && mode.ordinal() <= mDebugMode.ordinal())
             return true;
         return false;
     }
 
-    public static void debug(DEBUG_MODE mode, Class<?> source, String message)
+    public static void debug(DebugMode mode, Class<?> source, String message)
     {
         if (isDebugRelevant(mode))
             debug(source.getSimpleName() + ": " + message);
     }
 
-    public static void debug(DEBUG_MODE mode, Object source, String message)
+    public static void debug(DebugMode mode, Object source, String message)
     {
         if (isDebugRelevant(mode))
             debug(source.getClass().getSimpleName() + "@" + Integer.toHexString(source.hashCode()) + ": " + message);
