@@ -141,12 +141,12 @@ public class ULFragmentImpl implements IUniversalLoaderListener
     public void onDataReceived(ULKey key, Object data)
     {
         ULDebugger.debug(DebugMode.SIMPLE, getClass(), "onDataReceived: " + key);
+        mParent.onDataReceived(key, data);
         if (mAutomaticLoadingOverlayEnabled && mProvider != null)
         {
             // check if ALL loaders have loaded their data
             if (mProvider.getUniversalLoader().isAllDataLoaded(mFKey))
                 setLoadingState(false);
         }
-        mParent.onDataReceived(key, data);
     }
 }
