@@ -7,7 +7,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Executor;
 
-import android.os.AsyncTask;
 import android.support.v4.app.Fragment;
 
 import com.michaelflisar.universalloader.data.fragments.ULFragmentLoaderData;
@@ -20,6 +19,7 @@ import com.michaelflisar.universalloader.data.main.ULResult;
 import com.michaelflisar.universalloader.data.main.ULResultManager;
 import com.michaelflisar.universalloader.data.main.ULTask;
 import com.michaelflisar.universalloader.data.main.ULTaskManager;
+import com.michaelflisar.universalloader.helper.ULHelper;
 import com.michaelflisar.universalloader.interfaces.IUniversalLoaderListener;
 
 public class UniversalLoader extends Fragment
@@ -38,7 +38,7 @@ public class UniversalLoader extends Fragment
     {
         super();
         setRetainInstance(true);
-        mExecutor = AsyncTask.THREAD_POOL_EXECUTOR;
+        mExecutor = ULHelper.getExecutor(true);
     }
 
     @Override
@@ -55,7 +55,7 @@ public class UniversalLoader extends Fragment
 
     public void disableMulitThread()
     {
-        mExecutor = AsyncTask.SERIAL_EXECUTOR;
+        mExecutor = ULHelper.getExecutor(false);
     }
 
     // -----------------------------
@@ -203,7 +203,7 @@ public class UniversalLoader extends Fragment
     {
         startLoader(key, mLoaderData.getLoaderData(fKey, key));
     }
-    
+
     public void restartLoader(ULFragmentKey fKey, ULKey key)
     {
         clearData(key);
