@@ -93,11 +93,14 @@ public class UniversalLoader extends Fragment
     {
         synchronized (mLock)
         {
-            Iterator<Entry<ULKey, ULFragmentLoaderData>> it = loaders.iterator();
-            while (it.hasNext())
+            if (loaders != null)
             {
-                if (mResult.get(it.next().getKey()) == null)
-                    return false;
+                Iterator<Entry<ULKey, ULFragmentLoaderData>> it = loaders.iterator();
+                while (it.hasNext())
+                {
+                    if (mResult.get(it.next().getKey()) == null)
+                        return false;
+                }
             }
             return true;
         }
@@ -227,7 +230,8 @@ public class UniversalLoader extends Fragment
             IUniversalLoaderListener listener = iterator.next();
             if (listener != null)
             {
-                if (mLoaderData.getLoaders(listener.getFragmentKey()).contains(key))
+                ULFragmentLoaders loaders = mLoaderData.getLoaders(listener.getFragmentKey());
+                if (loaders != null && loaders.contains(key))
                 {
                     listener.onLoaderStarted();
                 }
@@ -243,7 +247,8 @@ public class UniversalLoader extends Fragment
             IUniversalLoaderListener listener = iterator.next();
             if (listener != null)
             {
-                if (mLoaderData.getLoaders(listener.getFragmentKey()).contains(key))
+                ULFragmentLoaders loaders = mLoaderData.getLoaders(listener.getFragmentKey());
+                if (loaders != null && loaders.contains(key))
                 {
                     mResult.setDelivered(key);
                     listener.onDataReceived(key, result);
@@ -264,15 +269,19 @@ public class UniversalLoader extends Fragment
     {
         synchronized (mLock)
         {
-            Iterator<Entry<ULKey, ULFragmentLoaderData>> it = mLoaderData.getLoaders(listener.getFragmentKey()).iterator();
-            while (it.hasNext())
+            ULFragmentLoaders loaders = mLoaderData.getLoaders(listener.getFragmentKey());
+            if (loaders != null)
             {
-                Entry<ULKey, ULFragmentLoaderData> entry = it.next();
-                ULResult result = mResult.get(entry.getKey());
-                if (entry.getValue().getType() == type && result != null)
+                Iterator<Entry<ULKey, ULFragmentLoaderData>> it = loaders.iterator();
+                while (it.hasNext())
                 {
-                    mResult.setDelivered(entry.getKey());
-                    listener.onDataReceived(entry.getKey(), result);
+                    Entry<ULKey, ULFragmentLoaderData> entry = it.next();
+                    ULResult result = mResult.get(entry.getKey());
+                    if (entry.getValue().getType() == type && result != null)
+                    {
+                        mResult.setDelivered(entry.getKey());
+                        listener.onDataReceived(entry.getKey(), result);
+                    }
                 }
             }
         }
