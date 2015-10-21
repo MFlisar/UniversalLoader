@@ -1,9 +1,11 @@
+DEPRECATED - Project no longer maintained
+
 UniversalLoader
 ===============
 
 simple, automatic handling of loading and caching data for a fragment
 
-**Screenshots**, **description** and **usage** can be found at http://www.michaelflisar.com/universal-loader/
+**Demo** https://play.google.com/store/apps/details?id=com.michaelflisar.universalloader.demo
 
 License
 =======
